@@ -1,0 +1,37 @@
+
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python Cache- und kompilierte Dateien
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Django
+*.log
+*.sqlite3
+*.sqlite3-journal
+local_settings.py
+
+# Umgebungsvariablen / Geheime Schlüssel
+.env
+.env.local
+.env.*.local
+
+# pytest & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# VS Code / IDE
+.vscode/
+.idea/
+*.swp
+
+# OS-spezifische Dateien
+.DS_Store
+Thumbs.db
