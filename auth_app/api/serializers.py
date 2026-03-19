@@ -10,7 +10,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'repeated_password']
+        fields = ['username', 'password', 'repeated_password', 'email']
         extra_kwargs = {
             'password': {
                 'write_only': True
@@ -53,6 +53,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             self.fields.pop('username')
 
     def validate(self, attrs):
+        # Reject unexpected fields (e.g. `type`) to avoid accepting irrelevant input
+        allowed = set(self.fields.keys())
+        initial_keys = set(self.initial_data.keys())
+        extra = initial_keys - allowed
+        if extra:
+            raise serializers.ValidationError(f'Unexpected fields: {", ".join(sorted(extra))}')
+
         email = attrs.get('email')
         password = attrs.get('password')
 
@@ -65,5 +72,4 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }
-        else:
-            raise serializers.ValidationError('Invalid email or password')
+        raise serializers.ValidationError('Invalid email or password')
