@@ -43,14 +43,13 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    email = serializers.EmailField()
+    username = serializers.CharField()
     password = serializers.CharField(write_only=True)
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'username' in self.fields:
-            self.fields.pop('username')
+        if 'email' in self.fields:
+            self.fields.pop('email')
 
     def validate(self, attrs):
         # Reject unexpected fields (e.g. `type`) to avoid accepting irrelevant input
@@ -60,10 +59,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if extra:
             raise serializers.ValidationError(f'Unexpected fields: {", ".join(sorted(extra))}')
 
-        email = attrs.get('email')
+        username = attrs.get('username')
         password = attrs.get('password')
 
-        user = User.objects.filter(email=email).first()
+        user = User.objects.filter(username=username).first()
 
         if user and user.check_password(password):
             refresh = self.get_token(user)
@@ -71,5 +70,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             return {
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
+                'detail': 'Login successfully!',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email
+                }
             }
-        raise serializers.ValidationError('Invalid email or password')
+        raise serializers.ValidationError('Invalid username or password')
