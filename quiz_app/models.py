@@ -1,8 +1,10 @@
 from django.db import models
+from django.conf import settings
 
 # Create your models here.
 
 class Quiz(models.Model):
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='quizzes', null=True, blank=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

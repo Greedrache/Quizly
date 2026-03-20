@@ -12,8 +12,8 @@ class QuizzesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Alle Quizzes aus der DB abrufen
-        quizzes = Quiz.objects.all()
+        # Nur Quizzes des aktuell eingeloggten Users aus der DB abrufen
+        quizzes = Quiz.objects.filter(author=request.user)
         # many=True da es sich um eine Liste handelt
         serializer = QuizSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -51,7 +51,8 @@ class QuizzesView(APIView):
         }
         serializer = QuizSerializer(data=serializer_data)
         if serializer.is_valid():
-            serializer.save()
+            # Speichere das Quiz und setze den aktuellen User als "author"
+            serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -59,19 +60,20 @@ class SingleQuizView(APIView):
     # Nur eingeloggte User dürfen auch einzelne Quizzes sehen/ändern/löschen
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, pk):
+    def get_object(self, pk, user):
         try:
-            return Quiz.objects.get(pk=pk)
+            # Stellt sicher, dass das Quiz existiert UND dem eingeloggten User gehört
+            return Quiz.objects.get(pk=pk, author=user)
         except Quiz.DoesNotExist:
             raise Http404
 
     def get(self, request, pk):
-        quiz = self.get_object(pk)
+        quiz = self.get_object(pk, request.user)
         serializer = QuizSerializer(quiz)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, pk):
-        quiz = self.get_object(pk)
+        quiz = self.get_object(pk, request.user)
         # partial=True erlaubt es, nur bestimmte Felder (wie nur den "title") zu updaten
         serializer = QuizSerializer(quiz, data=request.data, partial=True)
         if serializer.is_valid():
@@ -80,6 +82,6 @@ class SingleQuizView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        quiz = self.get_object(pk)
+        quiz = self.get_object(pk, request.user)
         quiz.delete()
         return Response({"detail": "Quiz deleted deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
