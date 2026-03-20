@@ -1,4 +1,9 @@
 import yt_dlp
+import whisper
+import os
+from google import genai
+
+GEMINI_API_KEY = "AIzaSyCQpfikyyFzgIu7CPo8MUpArTkXzA87zk0"
 
 def get_video_info(url):
     ydl_opts = {
@@ -9,37 +14,61 @@ def get_video_info(url):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         return ydl.sanitize_info(info)
+
+def process_video(url):
+    """
+    1. Downloads audio from YouTube
+    2. Transcribes it with Whisper
+    3. Returns the transcribed text
+    """
+    tmp_filename = "downloaded_audio.%(ext)s"
     
-tmp_filename = "audio.%(ext)s" # Temporary filename template for downloaded audio
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": tmp_filename,
+        "quiet": True,
+        "noplaylist": True,
+        "postprocessors": [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192",
+        }],
+    }
 
+    # 1. Download audio
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+    
+    audio_file = "downloaded_audio.mp3"
 
-ydl_opts = {
-    "format": "bestaudio/best",
-    "outtmpl": tmp_filename,
-    "quiet": True,
-    "noplaylist": True,
-}
+    # 2. Transcribe
+    model = whisper.load_model("base")
+    result = model.transcribe(audio_file)
+    text = result["text"]
 
+    # Optional: Aufräumen (Audio-Datei löschen)
+    if os.path.exists(audio_file):
+        os.remove(audio_file)
 
+    return text
 
-import whisper
+def generate_quiz_from_transcript(text):
+    """
+    Uses Google GenAI to generate the quiz JSON from transcript
+    """
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
-model = whisper.load_model("base")  # tiny, base, small, medium, large
+    prompt = f"""
+    Erstelle basierend auf dem folgenden Text ein Quiz. 
+    Gib NUR pures JSON in diesem Format zurück (ohne Markdown ```json formatierung), 
+    mit title, description und questions array. Jede Frage soll question_title, question_options (array mit 4 Optionen) und answer (die korrekte Option) haben.
 
-result = model.transcribe("audio.mp3")
+    Text: {text}
+    """
 
-print(result["text"])
-
-# Example usage of the Google Gemini API
-from google import genai
-
-GEMINI_API_KEY = "AIzaSyA3Oss_txV7pfpwAPY0TVFJcOM1lXXdzkY"
-
-client = genai.Client(api_key=GEMINI_API_KEY)
-
-response = client.models.generate_content(
-    model="gemini-3-flash-preview",
-    contents="Explain how AI works in a few words",
-)
-
-print(response.text)
+    response = client.models.generate_content(
+        model="gemini-3-flash-preview", # Use a reliable and fast gemini model
+        contents=prompt,
+    )
+    
+    return response.text

@@ -14,9 +14,11 @@ class Quiz(models.Model):
     
 class Question(models.Model):
     quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
-    text = models.TextField()
+    question_title = models.CharField(max_length=255)
+    question_options = models.JSONField(default=list)
+    answer = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.text[:50]
+        return self.question_title[:50]
