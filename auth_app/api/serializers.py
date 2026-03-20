@@ -6,6 +6,12 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration.
+    This serializer handles the validation and creation of a new user account.
+    It includes fields for username, email, password, and repeated_password.
+    The repeated_password field is used to ensure that the user correctly confirms their password during registration.
+    """
     repeated_password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -21,17 +27,30 @@ class RegistrationSerializer(serializers.ModelSerializer):
         }
 
     def validate_repeated_password(self, value):
+        """
+        Validate that the repeated password matches the original password.
+        This method checks if the 'repeated_password' field matches the 'password' field in
+        the initial data. If they do not match, it raises a ValidationError."""
         password = self.initial_data.get('password')
         if password and value and password != value:
             raise serializers.ValidationError('Passwords do not match')
         return value
 
     def validate_email(self, value):
+        """
+        Validate that the email is unique in the system.
+        This method checks if a user with the given email already exists in the database.
+        """
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError('Email already exists')
         return value
 
     def save(self):
+        """
+        Create and save a new user instance with the provided validated data.
+        This method extracts the password and email from the validated data, creates a new User instance, 
+        sets the password using Django's set_password method (which hashes the password), and saves the user to the database.
+        """
         pw = self.validated_data['password']
 
         account = User(email=self.validated_data['email'], username=self.validated_data['username'])
@@ -43,16 +62,30 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Custom serializer to include user details in the token response.
+    This serializer extends the default TokenObtainPairSerializer to add user information
+    to the response when a user logs in.
+    It validates the username and password, and if valid, it returns the access and refresh tokens
+    along with a success message and user details (id, username, email).
+    """
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the serializer and remove the 'email' field if it exists, because we are using 'username' for authentication.
+        """
         super().__init__(*args, **kwargs)
         if 'email' in self.fields:
             self.fields.pop('email')
 
     def validate(self, attrs):
-        # Reject unexpected fields (e.g. `type`) to avoid accepting irrelevant input
+        """
+        Validate the username and password, and return tokens along with user details.
+        This method checks for unexpected fields in the input data, validates the username and password against the database,
+        and if valid, generates JWT tokens and returns them along with a success message and user details.
+        """
         allowed = set(self.fields.keys())
         initial_keys = set(self.initial_data.keys())
         extra = initial_keys - allowed

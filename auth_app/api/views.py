@@ -5,11 +5,23 @@ from rest_framework.response import Response
 from .serializers import RegistrationSerializer, CustomTokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+
+
 class RegistrationView(APIView):
+    """
+    API endpoint for user registration.
+    This view allows new users to create an account by providing a username, email, password,
+    and repeated password for confirmation. It uses the RegistrationSerializer to validate the input data and create a new user.
+    The view is accessible to anyone (AllowAny permission) since it's meant for new users who don't have an account yet."""
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = RegistrationSerializer(data=request.data)
+        """
+        Handle POST requests to register a new user.
+        This method takes the incoming request data, validates it using the RegistrationSerializer, and if valid
+        creates a new user account. It returns a success message upon successful registration or error details if the input data is invalid.
+        """
+        serializer = RegistrationSerializer(data=request.data) 
 
         if serializer.is_valid():
             saved_account = serializer.save()
@@ -21,42 +33,51 @@ class RegistrationView(APIView):
 
 
 class CookieTokenObtainPairView(TokenObtainPairView):
+    """
+    Custom view for obtaining JWT tokens and setting them in HttpOnly cookies.
+    This view extends the default TokenObtainPairView to include functionality for setting the access and
+    refresh tokens in HttpOnly cookies upon successful login. It uses the CustomTokenObtainPairSerializer to include user details in the response.
+    """
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
+        """
+        Handle POST requests to log in a user and set JWT tokens in cookies.
+        This method processes the login request, validates the credentials, and if valid, generates JWT tokens
+        and sets them in HttpOnly cookies. It also removes the tokens from the JSON response to only return user details and a success message."""
         response = super().post(request, *args, **kwargs)
         if response.status_code == status.HTTP_200_OK:
             access_token = response.data.get('access')
             refresh_token = response.data.get('refresh')
 
-            # Set the access token in an HttpOnly cookie
             response.set_cookie(
                 key='access_token',
                 value=access_token,
                 httponly=True,
-                secure=True,  # Set to True in production
-                samesite='Lax'  # Adjust as needed (e.g., 'Strict' or 'None')
+                secure=True,  # Set to True in production to only allow cookies over HTTPS
+                samesite='Lax'  # Is for CSRF protection, adjust as needed (e.g. 'Strict' or 'None' if you need cross-site cookies)
             )
             
-            # Set the refresh token in an HttpOnly cookie
             if refresh_token:
                 response.set_cookie(
                     key='refresh_token',
                     value=refresh_token,
                     httponly=True,
-                    secure=True,  # Set to True in production
-                    samesite='Lax'  # Adjust as needed
+                    secure=True,  # Set to True in production to only allow cookies over HTTPS
+                    samesite='Lax'  # Is for CSRF protection, adjust as needed (e.g. 'Strict' or 'None' if you need cross-site cookies)
                 )
             
-            # Remove tokens from the JSON response to only return detail and user
             response.data.pop('access', None)
             response.data.pop('refresh', None)
         return response
     
 
 class CookieTokenRefreshView(TokenRefreshView):
+    """
+    Custom view for refreshing JWT tokens using the refresh token from HttpOnly cookies.
+    This view extends the default TokenRefreshView to read the refresh token from HttpOnly cookies instead
+    of the request body. It generates a new access token (and optionally a new refresh token if rotation is enabled) and sets them in cookies."""
     def post(self, request, *args, **kwargs):
-        # Extract the refresh token from the HttpOnly cookie
         refresh_token = request.COOKIES.get('refresh_token')
 
         if not refresh_token:
@@ -65,11 +86,9 @@ class CookieTokenRefreshView(TokenRefreshView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Inject it into the request data so the SimpleJWT serializer can process it
         data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
         data['refresh'] = refresh_token
 
-        # Get the standard SimpleJWT serializer (TokenRefreshSerializer)
         serializer = self.get_serializer(data=data)
 
         try:
@@ -77,14 +96,11 @@ class CookieTokenRefreshView(TokenRefreshView):
         except Exception as e:
             return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Extract newly minted access token (and refresh token, if rotation is enabled)
         access_token = serializer.validated_data.get('access')
         refresh_token_new = serializer.validated_data.get('refresh')
 
-        # Since we just want the 'detail' string in our response body:
         response = Response({'detail': 'Token refreshed'}, status=status.HTTP_200_OK)
 
-        # Set the newly generated access token in the cookie
         response.set_cookie(
             key='access_token',
             value=access_token,
@@ -93,7 +109,6 @@ class CookieTokenRefreshView(TokenRefreshView):
             samesite='Lax'
         )
 
-        # If refresh token rotation is enabled, simplejwt will give us a new refresh token
         if refresh_token_new:
             response.set_cookie(
                 key='refresh_token',
@@ -114,6 +129,11 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        """
+        Handle POST requests to log out a user by clearing JWT tokens from cookies.
+        This method creates a response indicating successful logout and deletes the 'access_token' and 'refresh_token' cookies to effectively log the user out on the client side. 
+        Note that this does not invalidate the tokens server-side, so they could still be used until they expire. For true logout, consider implementing token blacklisting.
+        """
         response = Response(
             {"detail": "Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid."},
             status=status.HTTP_200_OK
