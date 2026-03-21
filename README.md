@@ -43,6 +43,16 @@ quiz creation, and gameplay.
 <h3>4. Install dependencies</h3>
 <pre><code>pip install -r requirements.txt</code></pre>
 
+<h3>4.1 Configure environment variables</h3>
+<p>
+Open the <code>.env.template</code> file and insert your API key in the following field:
+</p>
+<pre><code>GEMINI_API_KEY=your_api_key_here</code></pre>
+<p>
+Make sure to replace <code>your_api_key_here</code> with your actual API key.
+</p>
+
+
 <h3>5. Create migrations</h3>
 <pre><code>python manage.py makemigrations</code></pre>
 
