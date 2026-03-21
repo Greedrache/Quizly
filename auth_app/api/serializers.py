@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 from auth_app.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
@@ -110,4 +111,4 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                     'email': user.email
                 }
             }
-        raise serializers.ValidationError('Invalid username or password')
+        raise AuthenticationFailed('Invalid username or password')

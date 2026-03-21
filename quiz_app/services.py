@@ -1,11 +1,11 @@
 import yt_dlp
 import whisper
 import os
-from dotenv import load_dotenv
 from google import genai
+from django.conf import settings
 
-load_dotenv('.env.template')
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = settings.GEMINI_API_KEY
+
 def get_video_info(url):
     ydl_opts = {
         "quiet": True,
@@ -60,12 +60,14 @@ def generate_quiz_from_transcript(text):
     client = genai.Client(api_key=GEMINI_API_KEY)
 
     prompt = f"""
-    Erstelle basierend auf dem folgenden Text ein Quiz. 
-    Gib NUR pures JSON in diesem Format zurück (ohne Markdown ```json formatierung), 
-    mit title, description und questions array. Jede Frage soll question_title, question_options (array mit 4 Optionen) und answer (die korrekte Option) haben.
+           Create a quiz based on the following text with EXACTLY 10 questions.
+           Return ONLY pure JSON in this format (without Markdown ```json formatting),
+           including a title, description, and a questions array. Each question should have
+           a question_title, question_options (an array with 4 options), and answer (the correct option).
 
-    Text: {text}
-    """
+           Text: {text}
+           """
+
 
     response = client.models.generate_content(
         model="gemini-3-flash-preview", # Use a reliable and fast gemini model
