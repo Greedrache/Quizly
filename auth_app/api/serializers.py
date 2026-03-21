@@ -9,14 +9,14 @@ class RegistrationSerializer(serializers.ModelSerializer):
     """
     Serializer for user registration.
     This serializer handles the validation and creation of a new user account.
-    It includes fields for username, email, password, and repeated_password.
-    The repeated_password field is used to ensure that the user correctly confirms their password during registration.
+    It includes fields for username, email, password, and confirmed_password.
+    The confirmed_password field is used to ensure that the user correctly confirms their password during registration.
     """
-    repeated_password = serializers.CharField(write_only=True)
+    confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'repeated_password', 'email']
+        fields = ['username', 'password', 'confirmed_password', 'email']
         extra_kwargs = {
             'password': {
                 'write_only': True
@@ -26,10 +26,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
             }
         }
 
-    def validate_repeated_password(self, value):
+    def validate_confirmed_password(self, value):
         """
-        Validate that the repeated password matches the original password.
-        This method checks if the 'repeated_password' field matches the 'password' field in
+        Validate that the confirmed password matches the original password.
+        This method checks if the 'confirmed_password' field matches the 'password' field in
         the initial data. If they do not match, it raises a ValidationError."""
         password = self.initial_data.get('password')
         if password and value and password != value:
