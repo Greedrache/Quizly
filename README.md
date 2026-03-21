@@ -45,12 +45,10 @@ quiz creation, and gameplay.
 
 <h3>4.1 Configure environment variables</h3>
 <p>
-Open the <code>.env.template</code> file and insert your API key in the following field:
+Please create a file and write the following code inside:
 </p>
-<pre><code>GEMINI_API_KEY=your_api_key_here</code></pre>
-<p>
-Make sure to replace <code>your_api_key_here</code> with your actual API key.
-</p>
+<pre><code>GEMINI_API_KEY = "" # Please enter your Gemini API key here!</code></pre>
+
 
 
 <h3>5. Create migrations</h3>
