@@ -22,9 +22,9 @@ class QuizzesView(APIView):
         """
         Handle GET requests to retrieve a list of quizzes for the authenticated user.
         This method queries the database for quizzes that are associated with the currently authenticated user (using the 'author' field) and returns them in the response.
-        It uses the QuizSerializer to convert the quiz instances into JSON format for the API response."""
+        It uses the QuizSerializer to convert the quiz instances into JSON format for the API response.
+        """
         quizzes = Quiz.objects.filter(author=request.user)
-        # many=True da es sich um eine Liste handelt
         serializer = QuizSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -86,7 +86,6 @@ class SingleQuizView(APIView):
         with the authenticated user (using the 'author' field). If such a quiz exists, it is returned; otherwise, a 404 error is raised to indicate that the quiz was not found or does not belong to the user.
         """
         try:
-            # Stellt sicher, dass das Quiz existiert UND dem eingeloggten User gehört
             return Quiz.objects.get(pk=pk, author=user)
         except Quiz.DoesNotExist:
             raise Http404

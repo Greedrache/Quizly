@@ -12,8 +12,10 @@ class RegistrationView(APIView):
     API endpoint for user registration.
     This view allows new users to create an account by providing a username, email, password,
     and repeated password for confirmation. It uses the RegistrationSerializer to validate the input data and create a new user.
-    The view is accessible to anyone (AllowAny permission) since it's meant for new users who don't have an account yet."""
+    The view is accessible to anyone (AllowAny permission) since it's meant for new users who don't have an account yet.
+    """    
     permission_classes = [AllowAny]
+
 
     def post(self, request):
         """
@@ -44,7 +46,8 @@ class CookieTokenObtainPairView(TokenObtainPairView):
         """
         Handle POST requests to log in a user and set JWT tokens in cookies.
         This method processes the login request, validates the credentials, and if valid, generates JWT tokens
-        and sets them in HttpOnly cookies. It also removes the tokens from the JSON response to only return user details and a success message."""
+        and sets them in HttpOnly cookies. It also removes the tokens from the JSON response to only return user details and a success message.
+        """
         response = super().post(request, *args, **kwargs)
         if response.status_code == status.HTTP_200_OK:
             access_token = response.data.get('access')
@@ -54,7 +57,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 key='access_token',
                 value=access_token,
                 httponly=True,
-                secure=True,  # Set to True in production to only allow cookies over HTTPS
+                secure=False,  # Set to True in production to only allow cookies over HTTPS
                 samesite='Lax'  # Is for CSRF protection, adjust as needed (e.g. 'Strict' or 'None' if you need cross-site cookies)
             )
             
@@ -63,7 +66,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                     key='refresh_token',
                     value=refresh_token,
                     httponly=True,
-                    secure=True,  # Set to True in production to only allow cookies over HTTPS
+                    secure=False,  # Set to True in production to only allow cookies over HTTPS
                     samesite='Lax'  # Is for CSRF protection, adjust as needed (e.g. 'Strict' or 'None' if you need cross-site cookies)
                 )
             
@@ -76,7 +79,8 @@ class CookieTokenRefreshView(TokenRefreshView):
     """
     Custom view for refreshing JWT tokens using the refresh token from HttpOnly cookies.
     This view extends the default TokenRefreshView to read the refresh token from HttpOnly cookies instead
-    of the request body. It generates a new access token (and optionally a new refresh token if rotation is enabled) and sets them in cookies."""
+    of the request body. It generates a new access token (and optionally a new refresh token if rotation is enabled) and sets them in cookies.
+    """
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get('refresh_token')
 
@@ -105,7 +109,7 @@ class CookieTokenRefreshView(TokenRefreshView):
             key='access_token',
             value=access_token,
             httponly=True,
-            secure=True,
+            secure=False,
             samesite='Lax'
         )
 
@@ -114,18 +118,18 @@ class CookieTokenRefreshView(TokenRefreshView):
                 key='refresh_token',
                 value=refresh_token_new,
                 httponly=True,
-                secure=True,
+                secure=False,
                 samesite='Lax'
             )
 
         return response
 
 class LogoutView(APIView):
-    '''
+    """
     Logout by deleting the access and refresh tokens from the cookies.
     Note: This does not invalidate the tokens server-side :), so they could still be used until
     they expire. For true logout, consider implementing token blacklisting.
-    '''
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
