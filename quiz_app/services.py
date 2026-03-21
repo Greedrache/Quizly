@@ -1,10 +1,11 @@
 import yt_dlp
 import whisper
 import os
+from dotenv import load_dotenv
 from google import genai
 
-GEMINI_API_KEY = "AIzaSyCQpfikyyFzgIu7CPo8MUpArTkXzA87zk0"
-
+load_dotenv('.env.template')
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 def get_video_info(url):
     ydl_opts = {
         "quiet": True,
