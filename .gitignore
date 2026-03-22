@@ -18,7 +18,6 @@ __pycache__/
 local_settings.py
 
 # Umgebungsvariablen / Geheime Schlüssel
-.env
 .env.local
 .env.*.local
 
