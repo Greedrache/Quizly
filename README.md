@@ -45,7 +45,7 @@ quiz creation, and gameplay.
 
 <h3>4.1 Configure environment variables</h3>
 <p>
-Please create a file and write the following code inside:
+Please go to the ,,.env,, file and write the following code inside:
 </p>
 <pre><code>GEMINI_API_KEY = "" # Please enter your Gemini API key here!</code></pre>
 
